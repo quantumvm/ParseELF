@@ -48,6 +48,7 @@ int main(int argc, char * argv[]){
 int checkelf(struct ELF *elf, FILE *fp){
 	//The magic number for ELF: \x76 + ELF
 	char magic_number[] = "\x7f\x45\x4C\x46";
+	//The byte for a 32-bit elf is 0x01
 	char _32bit[] = "\x01";
 
 	fread(elf->magic_number, 4,1,fp);
