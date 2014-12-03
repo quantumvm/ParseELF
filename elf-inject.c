@@ -10,7 +10,8 @@
 //used for memcpy
 #include <string.h>
 
-
+//This struct is used by the function get_shellcode since we need to 
+//return two values from the fucntion
 typedef struct shellcode_struct{
 	int size;
 	char * data;
@@ -25,9 +26,6 @@ shellcode_struct * get_shellcode(char * argv[]);
 
 void copy_partial(int fd, int od, unsigned int len);
 
-
-//This struct is used by the function get_shellcode since we need to 
-//return two values from the fucntion
 
 int main(int argc, char * argv[]){
 	FILE * fp;
