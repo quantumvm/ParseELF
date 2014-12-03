@@ -13,5 +13,5 @@ Allows a user to inject an elf executable with shellcode.
 ###Use:
 
 ```
-  ./elfheader [Name of Elf file to inject] [Shellcode to inject]
+  ./elf-inject [Name of Elf file to inject] [Shellcode to inject]
 ```
