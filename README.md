@@ -1,17 +1,17 @@
 ParseELF
 ========
 
-Demuxes an elf file for working at the binary level.
+Allows a user to inject an elf executable with shellcode.
 
 
-**About**: This program parses through the header of a linux file and prints out the diffrent parts of an elf executable. It is meant to be a simplified version of the linux program *readelf*.
+**About**:  Injects shellcode using the method described in silvio's paper here: http://vxheaven.org/lib/vsc01.html
 
 ###Caveats
-* I only built support for 32-bit elf files
-* All the information about the elf is stored in a struct called *ELF* this could be useful if you wanted to remove the prints and reuse the code elsewhere.
+* Only supports 32-bit elf files
+* The amount of padding between segments is limited. You might run out of space to insert shellcode.
 
 ###Use:
 
 ```
-  ./elfheader [Name of Elf file]
+  ./elfheader [Name of Elf file to inject] [Shellcode to inject]
 ```
