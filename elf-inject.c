@@ -27,6 +27,17 @@ shellcode_struct * get_shellcode(char * argv[]);
 
 void copy_partial(int fd, int od, unsigned int len);
 
+void print_val(char *  name,int val);
+void print_char_val(char * name, unsigned char * val);
+void print_elf_headers(Elf32_Ehdr * ehdr);
+void print_program_headers(Elf32_Ehdr * ehdr, Elf32_Phdr ** phdrs);
+void print_section_headers(Elf32_Ehdr * ehdr, Elf32_Shdr ** shdrs);
+void fprint_val(FILE * fp,char *  name,int val);
+void fprint_char_val(FILE * fp,char * name, unsigned char * val);
+void fprint_elf_headers(FILE * fp,Elf32_Ehdr * ehdr);
+void fprint_program_headers(FILE * fp,Elf32_Ehdr * ehdr, Elf32_Phdr ** phdrs);
+void fprint_section_headers(FILE * fp,Elf32_Ehdr * ehdr, Elf32_Shdr ** shdrs);
+void fprint_all_headers(char * fname, Elf32_Ehdr * ehdr, Elf32_Phdr ** phdrs, Elf32_Shdr ** shdrs);
 
 int main(int argc, char * argv[]){
 	FILE * fp;
@@ -42,7 +53,7 @@ int main(int argc, char * argv[]){
 	unsigned int new_code_address;
 
 	struct stat stat;
-	
+
 	//open file to be injected for manipulation
 	if((fp = fopen(argv[1],"r")) == NULL)
 		goto file_to_inject_open_error;	
@@ -56,6 +67,9 @@ int main(int argc, char * argv[]){
 	
 	//get elf section headers
 	section_headers = get_elf_section_headers(fp, elf_header);
+
+
+  fprint_all_headers("headers.orig.debug",elf_header,program_headers,section_headers);
 
 	//In ELF header, increase e_shoff by PAGE_SIZE 
   printf("header e_shoff changed from %x to ",elf_header->e_shoff);
@@ -131,7 +145,7 @@ int main(int argc, char * argv[]){
       printf("%x.\n",section_headers[i]->sh_offset);
 		}
     else{
-        printf("ignoring section header[%d]. sh_offset=%d(0x%x).\n",i,section_headers[i]->sh_offset,section_headers[i]->sh_offset);
+        //printf("ignoring section header[%d]. sh_offset=%d(0x%x).\n",i,section_headers[i]->sh_offset,section_headers[i]->sh_offset);
     }
 	}
 	
@@ -141,6 +155,7 @@ int main(int argc, char * argv[]){
 	}*/
 	//end debug code
 
+  fprint_all_headers("headers.new.debug",elf_header,program_headers,section_headers);
 
 /*
 *Time to inject the shellcode into the file!!!
@@ -393,4 +408,124 @@ void copy_partial(int fd, int od, unsigned int len){
 	}
 
 	
+}
+
+void print_val(char *  name, int val){
+  printf("%s = %d (0x%x)\n",name,val,val);
+}
+void print_char_val(char * name, unsigned char * val){
+  printf("%s = %s\n",name,val);
+}
+
+void print_elf_headers(Elf32_Ehdr * ehdr){
+  print_char_val("e_ident",ehdr->e_ident);
+  print_val("e_type",ehdr->e_type);
+  print_val("e_machine",ehdr->e_machine);
+  print_val("e_version",ehdr->e_version);
+  print_val("e_entry",ehdr->e_entry);
+  print_val("e_phoff",ehdr->e_phoff);
+  print_val("e_shoff",ehdr->e_shoff);
+  print_val("e_flags",ehdr->e_flags);
+  print_val("e_ehsize",ehdr->e_ehsize);
+  print_val("e_phentsize",ehdr->e_phentsize);
+  print_val("e_phnum",ehdr->e_phnum);
+  print_val("e_shentsize",ehdr->e_shentsize);
+  print_val("e_shnum",ehdr->e_shnum);
+  print_val("e_shstrndx",ehdr->e_shstrndx);
+}
+void print_program_headers(Elf32_Ehdr * ehdr, Elf32_Phdr ** phdrs){
+  for(int i=0;i<ehdr->e_phnum;i+=1){
+    printf("\n------ program header[%d] ------\n",i);
+    print_val("p_type",phdrs[i]->p_type);
+    print_val("p_offset",phdrs[i]->p_offset);
+    print_val("p_vaddr",phdrs[i]->p_vaddr);
+    print_val("p_paddr",phdrs[i]->p_paddr);
+    print_val("p_filesz",phdrs[i]->p_filesz);
+    print_val("p_memsz",phdrs[i]->p_memsz);
+    print_val("p_flags",phdrs[i]->p_flags);
+    print_val("p_align",phdrs[i]->p_align);
+  }
+  puts("");
+}
+void print_section_headers(Elf32_Ehdr * ehdr, Elf32_Shdr ** shdrs){
+  for(int i=0;i<ehdr->e_shnum;i+=1){
+    printf("\n------ section header[%d] ------\n",i);
+    print_val("sh_name",shdrs[i]->sh_name);
+    print_val("sh_type",shdrs[i]->sh_type);
+    print_val("sh_flags",shdrs[i]->sh_flags);
+    print_val("sh_addr",shdrs[i]->sh_addr);
+    print_val("sh_offset",shdrs[i]->sh_offset);
+    print_val("sh_size",shdrs[i]->sh_size);
+    print_val("sh_link",shdrs[i]->sh_link);
+    print_val("sh_info",shdrs[i]->sh_info);
+    print_val("sh_addralign",shdrs[i]->sh_addralign);
+    print_val("sh_entsize",shdrs[i]->sh_entsize);
+  }
+  puts("");
+}
+
+
+void fprint_val(FILE * fp,char *  name, int val){
+  fprintf(fp,"%s = %d (0x%x)\n",name,val,val);
+}
+void fprint_char_val(FILE * fp,char * name, unsigned char * val){
+  fprintf(fp,"%s = %s\n",name,val);
+}
+
+void fprint_elf_headers(FILE * fp,Elf32_Ehdr * ehdr){
+  fprint_char_val(fp,"e_ident",ehdr->e_ident);
+  fprint_val(fp,"e_type",ehdr->e_type);
+  fprint_val(fp,"e_machine",ehdr->e_machine);
+  fprint_val(fp,"e_version",ehdr->e_version);
+  fprint_val(fp,"e_entry",ehdr->e_entry);
+  fprint_val(fp,"e_phoff",ehdr->e_phoff);
+  fprint_val(fp,"e_shoff",ehdr->e_shoff);
+  fprint_val(fp,"e_flags",ehdr->e_flags);
+  fprint_val(fp,"e_ehsize",ehdr->e_ehsize);
+  fprint_val(fp,"e_phentsize",ehdr->e_phentsize);
+  fprint_val(fp,"e_phnum",ehdr->e_phnum);
+  fprint_val(fp,"e_shentsize",ehdr->e_shentsize);
+  fprint_val(fp,"e_shnum",ehdr->e_shnum);
+  fprint_val(fp,"e_shstrndx",ehdr->e_shstrndx);
+}
+void fprint_program_headers(FILE * fp,Elf32_Ehdr * ehdr, Elf32_Phdr ** phdrs){
+  for(int i=0;i<ehdr->e_phnum;i+=1){
+    fprintf(fp,"\n------ program header[%d] ------\n",i);
+    fprint_val(fp,"p_type",phdrs[i]->p_type);
+    fprint_val(fp,"p_offset",phdrs[i]->p_offset);
+    fprint_val(fp,"p_vaddr",phdrs[i]->p_vaddr);
+    fprint_val(fp,"p_paddr",phdrs[i]->p_paddr);
+    fprint_val(fp,"p_filesz",phdrs[i]->p_filesz);
+    fprint_val(fp,"p_memsz",phdrs[i]->p_memsz);
+    fprint_val(fp,"p_flags",phdrs[i]->p_flags);
+    fprint_val(fp,"p_align",phdrs[i]->p_align);
+  }
+  fprintf(fp,"\n");
+}
+void fprint_section_headers(FILE * fp,Elf32_Ehdr * ehdr, Elf32_Shdr ** shdrs){
+  for(int i=0;i<ehdr->e_shnum;i+=1){
+    fprintf(fp,"\n------ section header[%d] ------\n",i);
+    fprint_val(fp,"sh_name",shdrs[i]->sh_name);
+    fprint_val(fp,"sh_type",shdrs[i]->sh_type);
+    fprint_val(fp,"sh_flags",shdrs[i]->sh_flags);
+    fprint_val(fp,"sh_addr",shdrs[i]->sh_addr);
+    fprint_val(fp,"sh_offset",shdrs[i]->sh_offset);
+    fprint_val(fp,"sh_size",shdrs[i]->sh_size);
+    fprint_val(fp,"sh_link",shdrs[i]->sh_link);
+    fprint_val(fp,"sh_info",shdrs[i]->sh_info);
+    fprint_val(fp,"sh_addralign",shdrs[i]->sh_addralign);
+    fprint_val(fp,"sh_entsize",shdrs[i]->sh_entsize);
+  }
+  fprintf(fp,"\n");
+}
+void fprint_all_headers(char * fname, Elf32_Ehdr * ehdr, Elf32_Phdr ** phdrs, Elf32_Shdr ** shdrs){
+  FILE * fp = fopen(fname,"w");
+  if(fp == NULL){
+    printf("Error opening file, \"%s\"!",fname);
+    return;
+  }
+
+  fprint_elf_headers(fp,ehdr);
+  fprint_program_headers(fp,ehdr,phdrs);
+  fprint_section_headers(fp,ehdr,shdrs);
 }
