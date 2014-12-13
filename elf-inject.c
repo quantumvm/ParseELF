@@ -255,7 +255,7 @@ Elf32_Ehdr * get_elf_header(FILE * fp){
 	Elf32_Ehdr * elf = (Elf32_Ehdr *) malloc(sizeof(Elf32_Ehdr));
 	
 	//read in the entire header at once.
-	if(fread(elf,1,50,fp) == 0)
+	if(fread(elf,1,52,fp) == 0)
 		goto elf_header_error;
 	return elf;
 
