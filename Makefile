@@ -1,2 +1,2 @@
-all: elf-inject.c
-	gcc -o elf-inject.c -std=gnu99
+all:
+	gcc elf-inject.c -o elf-inject -std=gnu99
