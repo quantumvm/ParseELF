@@ -103,7 +103,9 @@ int main(int argc, char * argv[]){
 	
 	
 	//we need the filesz for offset
-	int offset=program_headers[text_segment_index]->p_offset+program_headers[text_segment_index]->p_filesz;
+	
+	int original_offset=program_headers[text_segment_index]->p_offset+program_headers[text_segment_index]->p_filesz;
+	int new_offset=program_headers[text_segment_index]->p_offset+program_headers[text_segment_index]->p_filesz + PAGE_SIZE;
 
 	//increase p_filesz to account for new code
   printf("program header filesz changed from %x to ",program_headers[text_segment_index]->p_filesz);
@@ -120,9 +122,9 @@ int main(int argc, char * argv[]){
 	//For each phdr who's segment is after the insertion -- increase p_offset
 	//by PAGE_SIZE ???
 	
-	printf("The offset is 0x%x (%d)\n", offset,offset);
+	printf("The new offset is 0x%x (%d)\n", new_offset,new_offset);
 	for(int i=(text_segment_index+1); i<elf_header->e_phnum; i++){
-    if(program_headers[i]->p_offset > offset){
+    if(program_headers[i]->p_offset < new_offset){
       printf("program_header[%d] offset changed from %x to ",i,program_headers[i]->p_offset);
 		  program_headers[i]->p_offset += PAGE_SIZE;
       printf("%x.\n",program_headers[i]->p_offset);
