@@ -1,5 +1,5 @@
 #include <stdio.h>
 
 int main(){
-  puts("Hello, world!");
+  puts("This sure is a normal file. :)");
 }
