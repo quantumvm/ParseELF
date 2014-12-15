@@ -2,9 +2,15 @@ e_ident = ELF
 e_type = 2 (0x2)
 e_machine = 3 (0x3)
 e_version = 1 (0x1)
+<<<<<<< HEAD
 e_entry = 134514152 (0x80485e8)
 e_phoff = 52 (0x34)
 e_shoff = 10224 (0x27f0)
+=======
+e_entry = 134514224 (0x8048630)
+e_phoff = 52 (0x34)
+e_shoff = 10264 (0x2818)
+>>>>>>> 3eae1d39a43861361e66f19f93e975458d6d86c9
 e_flags = 0 (0x0)
 e_ehsize = 52 (0x34)
 e_phentsize = 32 (0x20)
@@ -38,8 +44,13 @@ p_type = 1 (0x1)
 p_offset = 0 (0x0)
 p_vaddr = 134512640 (0x8048000)
 p_paddr = 134512640 (0x8048000)
+<<<<<<< HEAD
 p_filesz = 1595 (0x63b)
 p_memsz = 1595 (0x63b)
+=======
+p_filesz = 1667 (0x683)
+p_memsz = 1667 (0x683)
+>>>>>>> 3eae1d39a43861361e66f19f93e975458d6d86c9
 p_flags = 5 (0x5)
 p_align = 4096 (0x1000)
 
@@ -48,8 +59,13 @@ p_type = 1 (0x1)
 p_offset = 7944 (0x1f08)
 p_vaddr = 134520584 (0x8049f08)
 p_paddr = 134520584 (0x8049f08)
+<<<<<<< HEAD
 p_filesz = 280 (0x118)
 p_memsz = 284 (0x11c)
+=======
+p_filesz = 284 (0x11c)
+p_memsz = 288 (0x120)
+>>>>>>> 3eae1d39a43861361e66f19f93e975458d6d86c9
 p_flags = 6 (0x6)
 p_align = 4096 (0x1000)
 
@@ -75,9 +91,15 @@ p_align = 4 (0x4)
 
 ------ program header[6] ------
 p_type = 1685382480 (0x6474e550)
+<<<<<<< HEAD
 p_offset = 1280 (0x500)
 p_vaddr = 134513920 (0x8048500)
 p_paddr = 134513920 (0x8048500)
+=======
+p_offset = 1360 (0x550)
+p_vaddr = 134514000 (0x8048550)
+p_paddr = 134514000 (0x8048550)
+>>>>>>> 3eae1d39a43861361e66f19f93e975458d6d86c9
 p_filesz = 44 (0x2c)
 p_memsz = 44 (0x2c)
 p_flags = 4 (0x4)
@@ -170,7 +192,11 @@ sh_type = 11 (0xb)
 sh_flags = 2 (0x2)
 sh_addr = 134513100 (0x80481cc)
 sh_offset = 460 (0x1cc)
+<<<<<<< HEAD
 sh_size = 80 (0x50)
+=======
+sh_size = 96 (0x60)
+>>>>>>> 3eae1d39a43861361e66f19f93e975458d6d86c9
 sh_link = 6 (0x6)
 sh_info = 1 (0x1)
 sh_addralign = 4 (0x4)
@@ -180,9 +206,15 @@ sh_entsize = 16 (0x10)
 sh_name = 86 (0x56)
 sh_type = 3 (0x3)
 sh_flags = 2 (0x2)
+<<<<<<< HEAD
 sh_addr = 134513180 (0x804821c)
 sh_offset = 540 (0x21c)
 sh_size = 74 (0x4a)
+=======
+sh_addr = 134513196 (0x804822c)
+sh_offset = 556 (0x22c)
+sh_size = 81 (0x51)
+>>>>>>> 3eae1d39a43861361e66f19f93e975458d6d86c9
 sh_link = 0 (0x0)
 sh_info = 0 (0x0)
 sh_addralign = 1 (0x1)
@@ -192,9 +224,15 @@ sh_entsize = 0 (0x0)
 sh_name = 94 (0x5e)
 sh_type = 1879048191 (0x6fffffff)
 sh_flags = 2 (0x2)
+<<<<<<< HEAD
 sh_addr = 134513254 (0x8048266)
 sh_offset = 614 (0x266)
 sh_size = 10 (0xa)
+=======
+sh_addr = 134513278 (0x804827e)
+sh_offset = 638 (0x27e)
+sh_size = 12 (0xc)
+>>>>>>> 3eae1d39a43861361e66f19f93e975458d6d86c9
 sh_link = 5 (0x5)
 sh_info = 0 (0x0)
 sh_addralign = 2 (0x2)
@@ -204,8 +242,13 @@ sh_entsize = 2 (0x2)
 sh_name = 107 (0x6b)
 sh_type = 1879048190 (0x6ffffffe)
 sh_flags = 2 (0x2)
+<<<<<<< HEAD
 sh_addr = 134513264 (0x8048270)
 sh_offset = 624 (0x270)
+=======
+sh_addr = 134513292 (0x804828c)
+sh_offset = 652 (0x28c)
+>>>>>>> 3eae1d39a43861361e66f19f93e975458d6d86c9
 sh_size = 32 (0x20)
 sh_link = 6 (0x6)
 sh_info = 1 (0x1)
