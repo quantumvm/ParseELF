@@ -101,6 +101,9 @@ int main(int argc, char * argv[]){
   puts("[Info][03] Locating the text segment program header...");
   int flag_x = 4;
 	for(int i=0; i < elf_header->e_phnum; i++){
+    print_val("i",i);
+    print_val("p_type",program_headers[i]->p_type);
+    print_val("p_flags",program_headers[i]->p_flags);
 		if(program_headers[i]->p_type == 1 && program_headers[i]->p_flags & flag_x != 0){
       printf("[Info] using text segment at index %d.\n",i);
 			text_segment_index = i;
@@ -400,8 +403,8 @@ Elf32_Shdr ** get_elf_section_headers(FILE * fp, Elf32_Ehdr * elf_header){
 	fseek(fp, elf_header->e_shoff, SEEK_SET);
 
 	//copy the data from our elf into the allocated memory.
-	for(int i = 0; i< elf_header->e_phnum; i++){
-		fread(elf_section_header_list[i], 1, elf_header->e_shentsize,fp);
+	for(int i = 0; i< elf_header->e_shnum; i++){
+		fread(elf_section_header_list[i], elf_header->e_shentsize, 1, fp);
 	}
 	
 	return elf_section_header_list;
